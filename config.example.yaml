@@ -56,3 +56,7 @@ readiness:
   ux: [Problem, Users, User flow, Screens, Acceptance criteria]
   redesign: [Problem, Design branch, What changes, Acceptance criteria]
   question: [Question, Answer, Sources]
+
+# Title of the collapsible section that keeps the stakeholder's words verbatim.
+# Always required. Localize it together with your templates (e.g. "Pedido original").
+originalRequestTitle: Original request

@@ -40,7 +40,7 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
   const notReady = (type: unknown, description: unknown) => {
     if (!isRequestType(type)) return `type must be one of ${REQUEST_TYPES.join(", ")}`;
     if (typeof description !== "string" || !description.trim()) return "description is required";
-    const missing = missingSections(description, config.readiness[type]);
+    const missing = missingSections(description, config.readiness[type], config.originalRequestTitle);
     return missing.length ? `not ready, missing sections: ${missing.join(", ")}` : null;
   };
 
@@ -61,6 +61,7 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
         branches: config.github.branches,
         designBranchPrefix: config.github.designBranchPrefix,
         readiness: config.readiness,
+        originalRequestTitle: config.originalRequestTitle,
       });
     }
 

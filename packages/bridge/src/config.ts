@@ -42,6 +42,8 @@ export type Config = {
     contextPath?: string;
   };
   readiness: Record<RequestType, string[]>;
+  /** Title of the collapsible section that keeps the stakeholder's words (localize it with your templates). */
+  originalRequestTitle: string;
 };
 
 export type Env = {
@@ -99,5 +101,6 @@ export function loadConfig(path = process.env.SPECFORGE_CONFIG ?? "./config.yaml
   };
   config.github.designBranchPrefix ??= "design/";
   config.readiness = { ...DEFAULT_READINESS, ...(config.readiness ?? {}) };
+  config.originalRequestTitle ??= "Original request";
   return config;
 }

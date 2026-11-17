@@ -73,6 +73,12 @@ dev
     assert.deepEqual(missingSections(withoutOriginal, DEFAULT_READINESS.feature), ["Original request"]);
   });
 
+  it("supports a localized original-request title", () => {
+    const es = "## Pregunta\nx\n## Respuesta\nx\n## Fuentes\nx\n\n+++ Pedido original\n\n> ¿qué tenemos?\n\n+++";
+    assert.deepEqual(missingSections(es, ["Pregunta", "Respuesta", "Fuentes"], "Pedido original"), []);
+    assert.deepEqual(missingSections(es, ["Pregunta"], "Original request"), ["Original request"]);
+  });
+
   it("sends questions to answered and everything else to backlog", () => {
     assert.equal(finalStateFor("question"), "answered");
     assert.equal(finalStateFor("feature"), "backlog");

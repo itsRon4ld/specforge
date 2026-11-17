@@ -76,7 +76,7 @@ If the product context names a hotfix process or skill, reference it.
 
 ### 5. Enrich
 
-Use the **enrich-requirement** skill, together with any other project skill that applies (for example a redesign skill). Then fill the template for the type from the templates directory (`<type>.md`). The template's `##` headings are the Definition of Ready, and the bridge rejects an issue that is missing any of them. Always keep the stakeholder's words, verbatim, in the collapsible `Original request` section.
+Use the **enrich-requirement** skill, together with any other project skill that applies (for example a redesign skill). Then fill the template for the type from the templates directory (`<type>.md`). The template's `##` headings are the Definition of Ready, and the bridge rejects an issue that is missing any of them. `specforge job` shows the exact required headings per type (`readiness`); if the templates are localized, use their headings. Always keep the stakeholder's words, verbatim, in the collapsible section titled `originalRequestTitle` (default `Original request`).
 
 Write for a developer who has never seen the conversation:
 - titles in the user's terms: "Students can download their certificate as PDF", not "PDF endpoint";

@@ -79,13 +79,17 @@ export function isApproval(
  * (`## Heading`, case-insensitive). "Original request" is always required, so the
  * stakeholder's own words are never lost.
  */
-export function missingSections(description: string, required: string[]): string[] {
+export function missingSections(description: string, required: string[], originalTitle = "Original request"): string[] {
   const headings = new Set(
     [...description.matchAll(/^#{2,3}\s+(.+?)\s*$/gm)].map((m) => m[1].toLowerCase()),
   );
-  const hasOriginal = /^\+\+\+\s*original request/im.test(description) || headings.has("original request");
+  const collapsibles = new Set(
+    [...description.matchAll(/^\+\+\+\s*(.+?)\s*$/gm)].map((m) => m[1].toLowerCase()),
+  );
+  const original = originalTitle.toLowerCase();
+  const hasOriginal = collapsibles.has(original) || headings.has(original);
   const missing = required.filter((h) => !headings.has(h.toLowerCase()));
-  return hasOriginal ? missing : [...missing, "Original request"];
+  return hasOriginal ? missing : [...missing, originalTitle];
 }
 
 /** Final state for each request type once it passes the Definition of Ready. */
