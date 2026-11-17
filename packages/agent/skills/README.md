@@ -10,4 +10,4 @@ Bring your team's own skills:
 
 - **Replace** `enrich-requirement/SKILL.md` with your enrichment process.
 - **Add** more skills, for example a `redesign` skill with your design system rules, which the agent uses for `redesign` requests.
-- Or mount a folder of skills at runtime and point `SKILLS_DIR` at it, so your private skills stay out of this repository.
+- Or keep them in your product repo and set `agent.skillsPath` in `config.yaml` (recommended), or mount a folder and set `SKILLS_DIR`. Either way, your private skills stay out of this repository.

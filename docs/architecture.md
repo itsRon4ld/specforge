@@ -63,9 +63,11 @@ sequenceDiagram
 | | |
 |---|---|
 | Runtime | Claude Code through the Claude Agent SDK (`claude_code` preset + `instructions/product.md`) |
-| Workspace | Per-job folder with `.claude/skills` and `out/`, plus a clean read-only clone of the product repo |
-| Skills | `skills/*` (or `SKILLS_DIR`) loaded as project skills: your enrichment and redesign processes |
-| Templates | `templates/<type>.md`, matching the Definition of Ready |
+| Workspace | Per-job folder with `.claude/skills` and `out/`, plus clean read-only checkouts of the **development** and **production** branches (partial clone + worktree) |
+| Codebase context | The repo's root `CLAUDE.md` is added to the instructions; nested ones are read on demand |
+| Skills | Loaded as project skills: your enrichment and redesign processes. From `SKILLS_DIR`, `agent.skillsPath` (inside the product repo) or the bundled `skills/` |
+| Templates | `<type>.md` matching the Definition of Ready. From `TEMPLATES_DIR`, `agent.templatesPath` or the bundled `templates/` |
+| Context | Optional `agent.contextPath` file (your product map: customers, roles, modules, glossary) |
 | Tools | Bash, Read, Write, Edit, Glob, Grep, Skill, TodoWrite, and the `specforge` CLI |
 | States it can set | `needsInfo`, `needsApproval` (the rest only through `finalize`) |
 
@@ -78,6 +80,19 @@ sequenceDiagram
 | `ux` | UX document + HTML prototype, then a ready issue | PM approves the UX |
 | `redesign` | `design/*` branch with the redesign, then a ready issue linking it | PM approves the redesign |
 | `question` | Word/Excel answer attached, saved to the knowledge base | none |
+
+## Target branch and hotfixes
+
+Feature and bug issues must state a **target branch**. The agent compares the production checkout (what users run) with the development checkout (the next release):
+
+| Situation | Target |
+|---|---|
+| New work, or a bug that can wait | development |
+| Bug hurting users now | production (hotfix) |
+| Bug in production already fixed in development | production (hotfix by cherry-pick) |
+| Bug only in development | development; production is not affected |
+
+Hotfixes get the optional `hotfix` label. Whether something is urgent enough for a hotfix is confirmed with the PM.
 
 ## Design choices
 

@@ -33,6 +33,7 @@ specforge does that work, and keeps the PM in charge of the decisions:
 - **One gesture.** Paste the raw messages into an issue and mention `@specforge`. That's it.
 - **It asks instead of guessing.** Missing details become numbered questions in the Linear session, each with a suggested answer you can confirm.
 - **Grounded in reality.** It searches your backlog for duplicates and your codebase for what already exists, and names the files a developer will touch.
+- **Knows production from development.** It compares both branches to tell whether a bug hits users today, whether it's already fixed upstream, and whether it needs a hotfix.
 - **A real Definition of Ready.** The bridge refuses to publish an issue that is missing a required section.
 - **The PM decides.** UX and redesigns wait for your approval. Ready issues land in the backlog for you to review and schedule.
 
@@ -61,7 +62,7 @@ flowchart LR
 | Type | What you get | Gate |
 |---|---|---|
 | 🧩 **Feature** | Problem, users, Given/When/Then criteria, out-of-scope, technical notes with real file paths; sub-issues for big requests | You schedule it |
-| 🐞 **Bug** | Steps, expected vs. actual, attached evidence, suspected area in the code | You schedule it |
+| 🐞 **Bug** | Steps, expected vs. actual, attached evidence, suspected area in the code, and a **target branch**: next release or hotfix on production | You schedule it |
 | 🎨 **UX** | Flow and screens document plus a clickable HTML prototype, then the ready issue | You approve the UX |
 | 🖌️ **Redesign** | The redesign applied on a `design/*` branch, then an issue linking it for a developer | You approve the redesign |
 | ❓ **Question** | An answer from your codebase as a Word or Excel file, saved to a knowledge base for next time | — |
@@ -93,19 +94,24 @@ Everything specific to your team lives in [`config.yaml`](config.example.yaml):
 linear:
   team: PRD
   states: { backlog: Backlog, needsInfo: Needs Info, needsApproval: In Review, answered: Done }
-  labels: { feature: Feature, bug: Bug, ux: UX, redesign: Redesign, question: Question }
+  labels: { feature: Feature, bug: Bug, ux: UX, redesign: Redesign, question: Question, hotfix: Hotfix }
   knowledgeIssue: PRD-1
 approvals:
   approvers: [<your-linear-user-id>]
 github:
   repo: your-org/your-app
+  branches: { development: dev, production: main }
   designBranchPrefix: design/
 agent:
   model: claude-opus-5-5
   guidance: |
-    Our users are university staff and students. Each university is a tenant.
+    Our customers are companies; each company is a tenant.
+  # Version your setup next to your code (optional):
+  skillsPath: infra/specforge/skills
+  templatesPath: infra/specforge/templates
+  contextPath: infra/specforge/context.md
 readiness: # Definition of Ready: required ## headings per type
-  feature: [Problem, Users, Acceptance criteria, Out of scope, Technical notes]
+  feature: [Problem, Users, Acceptance criteria, Out of scope, Technical notes, Target branch]
 ```
 
 ## Bring your own skills
@@ -114,7 +120,9 @@ How your team writes requirements is yours. specforge loads every folder in [`pa
 
 - `enrich-requirement`: ships as a solid default (problem framing, gap checklist, Given/When/Then, INVEST splitting). Replace it with your own process.
 - Add a `redesign` skill with your design-system rules, and the agent uses it for redesign requests.
-- Keep private skills out of the repo by mounting them and setting `SKILLS_DIR`.
+- Keep them private and versioned **in your product repo** with `agent.skillsPath`, which also works for `templatesPath` and a `contextPath` file describing your product. Or mount a folder and set `SKILLS_DIR`.
+
+The agent also reads your repo's root `CLAUDE.md`, so your architecture notes double as its codebase map.
 
 ## Security model
 
