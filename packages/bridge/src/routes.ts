@@ -53,7 +53,7 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
         model: config.agent.model,
         guidance: config.agent.guidance ?? "",
         repo: config.github.repo,
-        baseBranch: config.github.baseBranch,
+        branches: config.github.branches,
         designBranchPrefix: config.github.designBranchPrefix,
         readiness: config.readiness,
       });
@@ -155,10 +155,12 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
 
     case "POST /github/branch": {
       const branch = header(req, "x-specforge-branch");
-      if (!isAllowedBranch(branch, config.github.designBranchPrefix, config.github.baseBranch)) {
+      const { development, production } = config.github.branches;
+      if (!isAllowedBranch(branch, config.github.designBranchPrefix, [development, production])) {
         return send(res, 403, { error: `branch "${branch}" is not allowed` });
       }
-      return send(res, 200, await github.pushBundle(raw, branch, config.github.baseBranch));
+      // Redesigns are new work: they always start from the development branch.
+      return send(res, 200, await github.pushBundle(raw, branch, development));
     }
   }
   send(res, 404, { error: "not found" });

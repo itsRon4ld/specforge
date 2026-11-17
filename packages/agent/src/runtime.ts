@@ -4,7 +4,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { BridgeClient, type JobEnvelope } from "./bridge-client.ts";
-import { prepareJobDir, prepareRepo } from "./workspace.ts";
+import { prepareJobDir, prepareRepo, type Checkouts } from "./workspace.ts";
 
 /**
  * Agent runtime: poll the bridge → prepare the job folder and the read-only
@@ -24,14 +24,22 @@ function log(...args: unknown[]) {
   console.log(new Date().toISOString(), "[product]", ...args);
 }
 
-function taskPrompt(envelope: JobEnvelope, repo: string): string {
+function taskPrompt(envelope: JobEnvelope, checkouts: Checkouts): string {
   const p = envelope.job.payload;
+  const { development, production } = envelope.branches;
+  const codebase =
+    checkouts.production === checkouts.development
+      ? [`- Product codebase (${development}, read-only): ${checkouts.development}`]
+      : [
+          `- Development branch \`${development}\` (next release, read-only): ${checkouts.development}`,
+          `- Production branch \`${production}\` (what users run today, read-only): ${checkouts.production}`,
+        ];
   return [
     `Linear agent session event: ${p.action}. Draft issue: ${p.identifier ?? p.issueId}.`,
     `Approved by an allowlisted reviewer: ${p.approved ? "YES" : "no"}`,
     p.prompt ? `\nMessage from the PM:\n${p.prompt}` : "",
     "",
-    `- Product codebase (read-only clone): ${repo}`,
+    ...codebase,
     `- Issue templates: ${TEMPLATES_DIR}`,
     `- Put generated files in ./out/`,
     "",
@@ -43,18 +51,18 @@ async function runJob(envelope: JobEnvelope) {
   const jobDir = prepareJobDir(WORK_DIR, envelope.job.id, SKILLS_DIR);
   const jobFile = join(jobDir, "job.json");
   writeFileSync(jobFile, JSON.stringify(envelope, null, 2));
-  const repo = prepareRepo(WORK_DIR, process.env.REPO_CLONE_URL ?? "");
+  const checkouts = prepareRepo(WORK_DIR, process.env.REPO_CLONE_URL ?? "", envelope.branches);
 
   const append = [instructions, envelope.guidance && `## Product context\n\n${envelope.guidance}`]
     .filter(Boolean)
     .join("\n\n");
 
   for await (const message of query({
-    prompt: taskPrompt(envelope, repo),
+    prompt: taskPrompt(envelope, checkouts),
     options: {
       model: envelope.model,
       cwd: jobDir,
-      additionalDirectories: [repo, TEMPLATES_DIR],
+      additionalDirectories: [...new Set([checkouts.development, checkouts.production]), TEMPLATES_DIR],
       systemPrompt: { type: "preset", preset: "claude_code", append },
       settingSources: ["project"], // loads the skills copied into .claude/skills
       allowedTools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"],

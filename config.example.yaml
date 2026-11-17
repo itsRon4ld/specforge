@@ -29,7 +29,10 @@ approvals:
 # for redesigns it may push `design/*` branches (never anything else).
 github:
   repo: your-org/your-app
-  baseBranch: main
+  branches:
+    development: dev # new work lands here; design branches start from it
+    production: main # what users run today; hotfixes start from it
+    # single-branch repo? set both to main
   designBranchPrefix: design/
 
 agent:

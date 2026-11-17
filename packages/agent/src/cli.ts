@@ -142,7 +142,7 @@ async function main() {
       const envelope = job();
       const git = (...a: string[]) => execFileSync("git", a, { encoding: "utf8" }).trim();
       const branch = git("rev-parse", "--abbrev-ref", "HEAD");
-      const base = `origin/${envelope.baseBranch}`;
+      const base = `origin/${envelope.branches.development}`;
       if (git("rev-list", "--count", `${base}..HEAD`) === "0") throw new Error(`no commits ahead of ${base}`);
       const bundle = execFileSync("git", ["bundle", "create", "-", `${base}..${branch}`]);
       return out(await bridge.upload("/github/branch", bundle, "application/octet-stream", { Branch: branch }));

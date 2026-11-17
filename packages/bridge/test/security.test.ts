@@ -94,10 +94,12 @@ describe("agent policy", () => {
   });
 
   it("only pushes design branches", () => {
-    assert.equal(isAllowedBranch("design/prd-12-new-dashboard", "design/", "main"), true);
-    assert.equal(isAllowedBranch("main", "design/", "main"), false);
-    assert.equal(isAllowedBranch("agent/prd-12", "design/", "main"), false);
-    assert.equal(isAllowedBranch("design/../main", "design/", "main"), false);
+    const protectedBranches = ["dev", "main"];
+    assert.equal(isAllowedBranch("design/prd-12-new-dashboard", "design/", protectedBranches), true);
+    assert.equal(isAllowedBranch("main", "design/", protectedBranches), false);
+    assert.equal(isAllowedBranch("dev", "design/", protectedBranches), false);
+    assert.equal(isAllowedBranch("agent/prd-12", "design/", protectedBranches), false);
+    assert.equal(isAllowedBranch("design/../main", "design/", protectedBranches), false);
   });
 
   it("only downloads Linear uploads", () => {

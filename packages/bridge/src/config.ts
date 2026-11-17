@@ -17,7 +17,16 @@ export type Config = {
     knowledgeIssue?: string;
   };
   approvals: { approvers: string[]; words: string[] };
-  github: { repo: string; baseBranch: string; designBranchPrefix: string };
+  github: {
+    repo: string;
+    /**
+     * `development` receives new work (and is the base of design branches);
+     * `production` is what users run today, and the base for hotfixes.
+     * Use the same name twice for single-branch repositories.
+     */
+    branches: { development: string; production: string };
+    designBranchPrefix: string;
+  };
   agent: { model: string; guidance?: string };
   readiness: Record<RequestType, string[]>;
 };
@@ -69,7 +78,12 @@ export function loadConfig(path = process.env.SPECFORGE_CONFIG ?? "./config.yaml
   config.approvals.words = (config.approvals.words?.length ? config.approvals.words : ["approved"]).map((w) =>
     w.toLowerCase(),
   );
-  config.github.baseBranch ??= "main";
+  // `baseBranch` is accepted for backwards compatibility with single-branch configs.
+  const legacyBase = (config.github as { baseBranch?: string }).baseBranch ?? "main";
+  config.github.branches = {
+    development: config.github.branches?.development ?? legacyBase,
+    production: config.github.branches?.production ?? config.github.branches?.development ?? legacyBase,
+  };
   config.github.designBranchPrefix ??= "design/";
   config.readiness = { ...DEFAULT_READINESS, ...(config.readiness ?? {}) };
   return config;

@@ -10,7 +10,7 @@ export type JobEnvelope = {
   model: string;
   guidance: string;
   repo: string;
-  baseBranch: string;
+  branches: { development: string; production: string };
   designBranchPrefix: string;
   readiness: Record<string, string[]>;
 };

@@ -95,12 +95,12 @@ export function finalStateFor(type: RequestType): StateKey {
 
 const BRANCH_SAFE = /^[a-z0-9][a-z0-9._/-]*$/;
 
-/** The agent may only push `<prefix><issue>-<slug>` design branches, never the base branch. */
-export function isAllowedBranch(branch: string, prefix: string, baseBranch: string): boolean {
+/** The agent may only push `<prefix><issue>-<slug>` design branches, never a protected branch. */
+export function isAllowedBranch(branch: string, prefix: string, protectedBranches: string[]): boolean {
   return (
     branch.startsWith(prefix) &&
     branch.length > prefix.length &&
-    branch !== baseBranch &&
+    !protectedBranches.includes(branch) &&
     BRANCH_SAFE.test(branch) &&
     !branch.includes("..")
   );
