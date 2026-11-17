@@ -55,6 +55,7 @@ sequenceDiagram
 
 - **Definition of Ready.** `/linear/finalize` and `/linear/subissue` check that the description contains every required `##` heading for its type, plus the original request. Otherwise they answer `422` and list the missing sections. The agent cannot reach `backlog` or `answered` in any other way.
 - **Approvals.** For a `prompted` event, `approved` is computed from the author's Linear id and the exact message. It reaches the agent inside the job, and the agent cannot fake it.
+- **Write scope.** Each job can only change its own draft issue and the sub-issues it creates, and can only post in its own agent session. Text injected into a draft cannot make the agent edit other issues.
 - **Labels.** Besides the type and hotfix labels, which it manages itself, the bridge lets the agent add any label that already exists in Linear. It checks names against the live list on every call and never creates labels.
 - **Uploads.** The bridge downloads files only from `uploads.linear.app`, so the agent cannot use the bridge's token against other hosts.
 - **Git.** The bridge imports a git bundle and pushes only `design/*` branches. It never opens PRs and never touches the base branch.

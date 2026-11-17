@@ -12,6 +12,7 @@ specforge feeds an agent text written by other people: stakeholder messages, scr
 | State allowlist | The agent can only park issues (`needsInfo`, `needsApproval`). Development states belong to humans. |
 | Bridge-verified approvals | UX and redesign approval comes from an allowlisted Linear user id. Text that claims approval is ignored. |
 | Branch policy | Only `design/*` branches are pushed. No PRs, never the base branch. |
+| Job write scope | The agent can only change the issue of the job it is running and the sub-issues it created, and can only post in that job's session. Reading and searching the team stay open. |
 | Upload guard | The bridge downloads only from `uploads.linear.app`. |
 | Signed, fresh webhooks | Linear payloads need a valid HMAC and a timestamp no older than 60 s. |
 

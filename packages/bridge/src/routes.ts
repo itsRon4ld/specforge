@@ -61,6 +61,20 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
     return { ids: result.ids };
   };
 
+  /**
+   * Write scope. The agent may only change the issue of the job it is running and
+   * the sub-issues it created in that job, and may only talk in that job's session.
+   * Reading stays open: searching the team is part of the job.
+   */
+  const outOfScope = (issueRef: unknown): string | null => {
+    const job = store.currentJob(role);
+    if (!job) return "no job is running";
+    if (typeof issueRef !== "string" || !store.inScope(job.id, issueRef)) {
+      return `issue ${String(issueRef)} is outside this job (only its own issue and the sub-issues it created)`;
+    }
+    return null;
+  };
+
   switch (key) {
     case "GET /linear/labels": {
       const managed = new Set(linear.managedLabelNames().map((n) => n.toLowerCase()));
@@ -70,6 +84,14 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
     case "GET /jobs/next": {
       const job = store.claimNext(role);
       if (!job) return send(res, 204);
+      // Resolve the draft once, so both its UUID and its identifier are in scope.
+      try {
+        const draft = await linear.issue(String(job.payload.issueId));
+        store.addScope(job.id, [draft.id, draft.identifier]);
+      } catch (e) {
+        store.finish(job.id, role, "failed"); // don't leave a job running that the agent never received
+        throw e;
+      }
       return send(res, 200, {
         job,
         model: config.agent.model,
@@ -126,6 +148,8 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
 
     case "POST /linear/finalize": {
       const { issueId, type, title, description, priority, hotfix, labels } = body();
+      const scope = outOfScope(issueId);
+      if (scope) return send(res, 403, { error: scope });
       const problem = notReady(type, description) ?? (title ? null : "title is required");
       if (problem) return send(res, 422, { error: problem });
       const extra = await extraLabels(labels);
@@ -145,19 +169,21 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
 
     case "POST /linear/subissue": {
       const { parentId, type, title, description, labels } = body();
+      const scope = outOfScope(parentId);
+      if (scope) return send(res, 403, { error: scope });
       const problem = notReady(type, description) ?? (title ? null : "title is required");
       if (problem) return send(res, 422, { error: problem });
       const extra = await extraLabels(labels);
       if ("error" in extra) return send(res, 422, { error: extra.error });
-      return send(
-        res,
-        200,
-        await linear.createSubIssue(parentId, { type, title, description, extraLabelIds: extra.ids }),
-      );
+      const created = await linear.createSubIssue(parentId, { type, title, description, extraLabelIds: extra.ids });
+      store.addScope(store.currentJob(role)!.id, [created.id, created.identifier]);
+      return send(res, 200, created);
     }
 
     case "POST /linear/comment": {
       const { issueId, body: text } = body();
+      const scope = outOfScope(issueId);
+      if (scope) return send(res, 403, { error: scope });
       await linear.comment(issueId, text);
       return send(res, 200, { ok: true });
     }
@@ -167,18 +193,25 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
       if (!STATE_ALLOWLIST[role].includes(state)) {
         return send(res, 403, { error: `${role} cannot set ${state} directly; use finalize` });
       }
+      const scope = outOfScope(issueId);
+      if (scope) return send(res, 403, { error: scope });
       await linear.setState(issueId, state);
       return send(res, 200, { ok: true });
     }
 
     case "POST /linear/activity": {
       const { sessionId, content } = body() as { sessionId: string; content: ActivityContent };
+      if (!sessionId || store.currentJob(role)?.payload.sessionId !== sessionId) {
+        return send(res, 403, { error: "activities only go to the running job's own session" });
+      }
       await linear.activity(sessionId, content);
       return send(res, 200, { ok: true });
     }
 
     case "POST /linear/document": {
       const { issueId, title, content } = body();
+      const scope = outOfScope(issueId);
+      if (scope) return send(res, 403, { error: scope });
       return send(res, 200, await linear.document(issueId, title, content));
     }
 
@@ -186,6 +219,8 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
       const issueId = header(req, "x-specforge-issue");
       const filename = header(req, "x-specforge-filename");
       if (!issueId || !filename || !raw.length) return send(res, 400, { error: "issue, filename and body required" });
+      const scope = outOfScope(issueId);
+      if (scope) return send(res, 403, { error: scope });
       return send(
         res,
         200,
