@@ -12,7 +12,9 @@ export function prepareRepo(workDir: string, cloneUrl: string): string {
   const git = (...args: string[]) => execFileSync("git", ["-C", repo, ...args], { stdio: "inherit" });
 
   if (!existsSync(join(repo, ".git"))) {
-    execFileSync("git", ["clone", "--quiet", cloneUrl, repo], { stdio: "inherit" });
+    // Partial clone: full commit history (for diffs and logs) but file contents are
+    // fetched on demand. Much faster and smaller for large monorepos.
+    execFileSync("git", ["clone", "--quiet", "--filter=blob:none", cloneUrl, repo], { stdio: "inherit" });
   }
   git("fetch", "--quiet", "--prune", "origin");
   git("reset", "--quiet", "--hard");
