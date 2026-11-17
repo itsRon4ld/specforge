@@ -30,7 +30,17 @@ export type Config = {
     branches: { development: string; production: string };
     designBranchPrefix: string;
   };
-  agent: { model: string; guidance?: string };
+  agent: {
+    model: string;
+    guidance?: string;
+    /**
+     * Optional paths inside the product repository (development branch), so a team
+     * can version its specforge setup next to its code, e.g. `infra/specforge/skills`.
+     */
+    skillsPath?: string;
+    templatesPath?: string;
+    contextPath?: string;
+  };
   readiness: Record<RequestType, string[]>;
 };
 

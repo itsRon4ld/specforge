@@ -9,6 +9,8 @@ export type JobEnvelope = {
   job: { id: number; role: "product"; payload: Record<string, any> };
   model: string;
   guidance: string;
+  /** Paths relative to the product repo root; null means "use the bundled default". */
+  paths: { skills: string | null; templates: string | null; context: string | null };
   repo: string;
   branches: { development: string; production: string };
   designBranchPrefix: string;

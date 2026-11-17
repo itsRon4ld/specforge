@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { query } from "@anthropic-ai/claude-agent-sdk";
@@ -16,9 +16,27 @@ const WORK_DIR = process.env.WORK_DIR ?? "/work";
 const POLL_MS = Number(process.env.POLL_SECONDS ?? 10) * 1000;
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const instructions = readFileSync(join(root, "instructions", "product.md"), "utf8");
-const TEMPLATES_DIR = join(root, "templates");
-const SKILLS_DIR = process.env.SKILLS_DIR ?? join(root, "skills");
 const bridge = new BridgeClient();
+
+/**
+ * Where skills, templates and extra context come from, in order of precedence:
+ *   1. SKILLS_DIR / TEMPLATES_DIR / CONTEXT_FILE (absolute paths, e.g. a mounted volume)
+ *   2. agent.skillsPath / templatesPath / contextPath in config.yaml, relative to the product repo
+ *   3. the defaults bundled with specforge
+ */
+function resolveSources(envelope: JobEnvelope, repo: string) {
+  const fromRepo = (path: string | null) => (path ? resolve(repo, path) : null);
+  return {
+    skills: process.env.SKILLS_DIR ?? fromRepo(envelope.paths.skills) ?? join(root, "skills"),
+    templates: process.env.TEMPLATES_DIR ?? fromRepo(envelope.paths.templates) ?? join(root, "templates"),
+    context: process.env.CONTEXT_FILE ?? fromRepo(envelope.paths.context),
+  };
+}
+
+function readContext(path: string | null): string {
+  if (!path || !existsSync(path)) return "";
+  return `## Product context file\n\n${readFileSync(path, "utf8")}`;
+}
 
 const MAX_GUIDE_CHARS = 40_000;
 
@@ -47,7 +65,7 @@ function log(...args: unknown[]) {
   console.log(new Date().toISOString(), "[product]", ...args);
 }
 
-function taskPrompt(envelope: JobEnvelope, checkouts: Checkouts): string {
+function taskPrompt(envelope: JobEnvelope, checkouts: Checkouts, templatesDir: string): string {
   const p = envelope.job.payload;
   const { development, production } = envelope.branches;
   const codebase =
@@ -63,7 +81,7 @@ function taskPrompt(envelope: JobEnvelope, checkouts: Checkouts): string {
     p.prompt ? `\nMessage from the PM:\n${p.prompt}` : "",
     "",
     ...codebase,
-    `- Issue templates: ${TEMPLATES_DIR}`,
+    `- Issue templates: ${templatesDir}`,
     `- Put generated files in ./out/`,
     "",
     `Start with \`specforge job\` and \`specforge issue ${p.issueId}\`.`,
@@ -71,25 +89,28 @@ function taskPrompt(envelope: JobEnvelope, checkouts: Checkouts): string {
 }
 
 async function runJob(envelope: JobEnvelope) {
-  const jobDir = prepareJobDir(WORK_DIR, envelope.job.id, SKILLS_DIR);
+  // The repo comes first: skills, templates and context may live inside it.
+  const checkouts = prepareRepo(WORK_DIR, process.env.REPO_CLONE_URL ?? "", envelope.branches);
+  const sources = resolveSources(envelope, checkouts.development);
+  const jobDir = prepareJobDir(WORK_DIR, envelope.job.id, sources.skills);
   const jobFile = join(jobDir, "job.json");
   writeFileSync(jobFile, JSON.stringify(envelope, null, 2));
-  const checkouts = prepareRepo(WORK_DIR, process.env.REPO_CLONE_URL ?? "", envelope.branches);
 
   const append = [
     instructions,
     envelope.guidance && `## Product context\n\n${envelope.guidance}`,
+    readContext(sources.context),
     codebaseGuide(checkouts.development),
   ]
     .filter(Boolean)
     .join("\n\n");
 
   for await (const message of query({
-    prompt: taskPrompt(envelope, checkouts),
+    prompt: taskPrompt(envelope, checkouts, sources.templates),
     options: {
       model: envelope.model,
       cwd: jobDir,
-      additionalDirectories: [...new Set([checkouts.development, checkouts.production]), TEMPLATES_DIR],
+      additionalDirectories: [...new Set([checkouts.development, checkouts.production, sources.templates])],
       systemPrompt: { type: "preset", preset: "claude_code", append },
       settingSources: ["project"], // loads the skills copied into .claude/skills
       allowedTools: ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "Skill", "TodoWrite"],

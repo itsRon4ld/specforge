@@ -52,6 +52,11 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
         job,
         model: config.agent.model,
         guidance: config.agent.guidance ?? "",
+        paths: {
+          skills: config.agent.skillsPath ?? null,
+          templates: config.agent.templatesPath ?? null,
+          context: config.agent.contextPath ?? null,
+        },
         repo: config.github.repo,
         branches: config.github.branches,
         designBranchPrefix: config.github.designBranchPrefix,
