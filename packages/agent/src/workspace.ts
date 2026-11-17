@@ -49,6 +49,22 @@ export function prepareRepo(workDir: string, cloneUrl: string, branches: Branche
 }
 
 /**
+ * Optional private "setup" repository holding a team's skills, templates and
+ * context, kept apart from both specforge and the product code. Refreshed before
+ * every job, so a pushed change applies to the next request.
+ */
+export function prepareSetupRepo(workDir: string, cloneUrl: string | undefined): string | null {
+  if (!cloneUrl) return null;
+  const dir = join(workDir, "setup");
+  if (!existsSync(join(dir, ".git"))) {
+    execFileSync("git", ["clone", "--quiet", "--depth=1", cloneUrl, dir], { stdio: "inherit" });
+  }
+  run(dir, "fetch", "--quiet", "--depth=1", "origin");
+  resetTo(dir, "FETCH_HEAD");
+  return dir;
+}
+
+/**
  * Per-job folder. Skills are copied into `.claude/skills` so Claude Code loads
  * them as project skills; generated files (docx, xlsx, prototypes) go in `out/`.
  */

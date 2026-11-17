@@ -30,7 +30,9 @@ services:
       BRIDGE_TOKEN: ${PRODUCT_TOKEN:?}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?}
       REPO_CLONE_URL: ${REPO_CLONE_URL:?}
-      # Optional: mount your private skills and point SKILLS_DIR at them
+      # Optional: a private repo with your skills/, templates/ and context.md (read-only URL)
+      SETUP_REPO_URL: ${SETUP_REPO_URL:-}
+      # Optional: or mount your private skills and point SKILLS_DIR at them
       # SKILLS_DIR: /skills
     volumes:
       - agent-work:/work

@@ -4,7 +4,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { BridgeClient, type JobEnvelope } from "./bridge-client.ts";
-import { prepareJobDir, prepareRepo, type Checkouts } from "./workspace.ts";
+import { prepareJobDir, prepareRepo, prepareSetupRepo, type Checkouts } from "./workspace.ts";
 
 /**
  * Agent runtime: poll the bridge → prepare the job folder and the read-only
@@ -21,15 +21,21 @@ const bridge = new BridgeClient();
 /**
  * Where skills, templates and extra context come from, in order of precedence:
  *   1. SKILLS_DIR / TEMPLATES_DIR / CONTEXT_FILE (absolute paths, e.g. a mounted volume)
- *   2. agent.skillsPath / templatesPath / contextPath in config.yaml, relative to the product repo
- *   3. the defaults bundled with specforge
+ *   2. the setup repository (SETUP_REPO_URL): `skills/`, `templates/`, `context.md` at its root
+ *   3. agent.skillsPath / templatesPath / contextPath in config.yaml, relative to the product repo
+ *   4. the defaults bundled with specforge
  */
-function resolveSources(envelope: JobEnvelope, repo: string) {
+function resolveSources(envelope: JobEnvelope, repo: string, setup: string | null) {
   const fromRepo = (path: string | null) => (path ? resolve(repo, path) : null);
+  const fromSetup = (path: string) => (setup && existsSync(join(setup, path)) ? join(setup, path) : null);
   return {
-    skills: process.env.SKILLS_DIR ?? fromRepo(envelope.paths.skills) ?? join(root, "skills"),
-    templates: process.env.TEMPLATES_DIR ?? fromRepo(envelope.paths.templates) ?? join(root, "templates"),
-    context: process.env.CONTEXT_FILE ?? fromRepo(envelope.paths.context),
+    skills: process.env.SKILLS_DIR ?? fromSetup("skills") ?? fromRepo(envelope.paths.skills) ?? join(root, "skills"),
+    templates:
+      process.env.TEMPLATES_DIR ??
+      fromSetup("templates") ??
+      fromRepo(envelope.paths.templates) ??
+      join(root, "templates"),
+    context: process.env.CONTEXT_FILE ?? fromSetup("context.md") ?? fromRepo(envelope.paths.context),
   };
 }
 
@@ -91,7 +97,8 @@ function taskPrompt(envelope: JobEnvelope, checkouts: Checkouts, templatesDir: s
 async function runJob(envelope: JobEnvelope) {
   // The repo comes first: skills, templates and context may live inside it.
   const checkouts = prepareRepo(WORK_DIR, process.env.REPO_CLONE_URL ?? "", envelope.branches);
-  const sources = resolveSources(envelope, checkouts.development);
+  const setup = prepareSetupRepo(WORK_DIR, process.env.SETUP_REPO_URL);
+  const sources = resolveSources(envelope, checkouts.development, setup);
   const jobDir = prepareJobDir(WORK_DIR, envelope.job.id, sources.skills);
   const jobFile = join(jobDir, "job.json");
   writeFileSync(jobFile, JSON.stringify(envelope, null, 2));
