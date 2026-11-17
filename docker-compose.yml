@@ -1,0 +1,50 @@
+# specforge: bridge + product agent.
+#
+# Secrets are passed explicitly per service (no shared env_file): the agent
+# receives only its role token and an Anthropic key, never the Linear or
+# GitHub credentials held by the bridge.
+
+services:
+  bridge:
+    build: { context: ., dockerfile: packages/bridge/Dockerfile }
+    restart: unless-stopped
+    ports:
+      - "8080:8080" # expose ONLY /hooks/linear through your reverse proxy
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - bridge-data:/data
+    environment:
+      SPECFORGE_CONFIG: /app/config.yaml
+      LINEAR_ACCESS_TOKEN: ${LINEAR_ACCESS_TOKEN:?}
+      LINEAR_WEBHOOK_SECRET: ${LINEAR_WEBHOOK_SECRET:?}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:?}
+      PRODUCT_TOKEN: ${PRODUCT_TOKEN:?}
+    networks: [public, internal]
+
+  agent:
+    build: { context: ., dockerfile: packages/agent/Dockerfile }
+    restart: unless-stopped
+    depends_on: [bridge]
+    environment:
+      BRIDGE_URL: http://bridge:8080
+      BRIDGE_TOKEN: ${PRODUCT_TOKEN:?}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?}
+      REPO_CLONE_URL: ${REPO_CLONE_URL:?}
+      # Optional: mount your private skills and point SKILLS_DIR at them
+      # SKILLS_DIR: /skills
+    volumes:
+      - agent-work:/work
+      # - ./my-skills:/skills:ro
+    deploy:
+      resources:
+        limits: { cpus: "2", memory: 4g }
+    networks: [internal, egress]
+
+networks:
+  public: {}
+  internal: { internal: true }
+  egress: {} # Anthropic API and the read-only git clone
+
+volumes:
+  bridge-data: {}
+  agent-work: {}
