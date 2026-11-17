@@ -1,0 +1,49 @@
+# specforge configuration. Copy to config.yaml and adjust.
+# Names (team key, states, labels) are resolved to Linear ids when the bridge starts.
+
+linear:
+  team: PRD # team where drafts are written and ready issues land
+  states:
+    backlog: Backlog # finished, ready for the PM to review
+    needsInfo: Needs Info # the agent asked the PM a question
+    needsApproval: In Review # a UX proposal or redesign is waiting for approval
+    answered: Done # a question was answered (no development needed)
+  # One label per request type; the agent sets exactly one
+  labels:
+    feature: Feature
+    bug: Bug
+    ux: UX
+    redesign: Redesign
+    question: Question
+  # Answers to platform questions are saved as documents on this issue,
+  # so the agent can reuse them next time (your team's knowledge base).
+  knowledgeIssue: PRD-1
+
+# Only these Linear users can approve a UX proposal or a redesign.
+approvals:
+  approvers:
+    - 00000000-0000-0000-0000-000000000000 # Linear user id
+  words: [approved, approve, lgtm, ok, go]
+
+# The product codebase. The agent reads it to check what exists and to scope work;
+# for redesigns it may push `design/*` branches (never anything else).
+github:
+  repo: your-org/your-app
+  baseBranch: main
+  designBranchPrefix: design/
+
+agent:
+  model: claude-opus-5-5
+  # Context about your product the agent should always know
+  guidance: |
+    Our users are university staff and students. Each university is a tenant.
+    Write issue titles in English, in the user's terms.
+
+# Definition of Ready: the bridge refuses to publish an issue whose description
+# is missing any of these headings (## Heading). "Original request" is always required.
+readiness:
+  feature: [Problem, Users, Acceptance criteria, Out of scope, Technical notes]
+  bug: [What happens, Steps to reproduce, Expected, Actual, Evidence]
+  ux: [Problem, Users, User flow, Screens, Acceptance criteria]
+  redesign: [Problem, Design branch, What changes, Acceptance criteria]
+  question: [Question, Answer, Sources]

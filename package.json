@@ -1,0 +1,23 @@
+{
+  "name": "specforge",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Forward loose stakeholder messages to an agent in Linear and get back a ready-to-build issue: enriched, deduplicated, with evidence, UX or redesign attached.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "bridge": "pnpm --filter @specforge/bridge start",
+    "agent": "pnpm --filter @specforge/agent start",
+    "setup:linear": "node scripts/linear-oauth.ts",
+    "typecheck": "pnpm -r typecheck",
+    "test": "node --test \"packages/*/test/*.test.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
