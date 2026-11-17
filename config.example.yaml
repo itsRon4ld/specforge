@@ -16,9 +16,10 @@ linear:
     redesign: Redesign
     question: Question
     hotfix: Hotfix # optional: added when the issue targets the production branch
-  # Answers to platform questions are saved as documents on this issue,
-  # so the agent can reuse them next time (your team's knowledge base).
-  knowledgeIssue: PRD-1
+  # Optional knowledge base: answers to questions are saved as documents on this issue
+  # and reused (after re-checking the code). Leave it out to always answer from the code,
+  # with nothing to keep up to date.
+  # knowledgeIssue: PRD-1
 
 # Only these Linear users can approve a UX proposal or a redesign.
 approvals:

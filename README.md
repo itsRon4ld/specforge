@@ -65,7 +65,7 @@ flowchart LR
 | 🐞 **Bug** | Steps, expected vs. actual, attached evidence, suspected area in the code, and a **target branch**: next release or hotfix on production | You schedule it |
 | 🎨 **UX** | Flow and screens document plus a clickable HTML prototype, then the ready issue | You approve the UX |
 | 🖌️ **Redesign** | The redesign applied on a `design/*` branch, then an issue linking it for a developer | You approve the redesign |
-| ❓ **Question** | An answer from your codebase as a Word or Excel file, saved to a knowledge base for next time | — |
+| ❓ **Question** | An answer researched in your codebase, as a Word or Excel file (optionally saved to a knowledge base) | — |
 
 Every issue keeps the stakeholder's original words in a collapsible **Original request** section. The agent also adds any of your **existing labels** that apply (customer, area…), following each label's description in Linear. It never creates new ones.
 
@@ -95,7 +95,6 @@ linear:
   team: PRD
   states: { backlog: Backlog, needsInfo: Needs Info, needsApproval: In Review, answered: Done }
   labels: { feature: Feature, bug: Bug, ux: UX, redesign: Redesign, question: Question, hotfix: Hotfix }
-  knowledgeIssue: PRD-1
 approvals:
   approvers: [<your-linear-user-id>]
 github:

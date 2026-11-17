@@ -84,6 +84,7 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
         designBranchPrefix: config.github.designBranchPrefix,
         readiness: config.readiness,
         originalRequestTitle: config.originalRequestTitle,
+        knowledgeBase: Boolean(config.linear.knowledgeIssue),
       });
     }
 

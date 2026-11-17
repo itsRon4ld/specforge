@@ -14,7 +14,7 @@ In `config.yaml`:
 - set the team key and the names of the states;
 - create the five type labels (Feature, Bug, UX, Redesign, Question) in Linear and put their names in `linear.labels`;
 - add your Linear user id as an approver;
-- create an issue such as *"Knowledge base"* and set its identifier as `knowledgeIssue`.
+- optionally, create an issue such as *"Knowledge base"* and set its identifier as `knowledgeIssue` to save and reuse answers. Without it, every question is answered from the code.
 
 ## 2. Linear agent
 

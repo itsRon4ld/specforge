@@ -15,6 +15,8 @@ export type JobEnvelope = {
   branches: { development: string; production: string };
   designBranchPrefix: string;
   readiness: Record<string, string[]>;
+  /** False when linear.knowledgeIssue is not configured: skip `knowledge` / `knowledge-save`. */
+  knowledgeBase: boolean;
 };
 
 export class BridgeClient {

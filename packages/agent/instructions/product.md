@@ -51,7 +51,7 @@ Never publish a half-ready issue. Never invent facts. A reasonable default is fi
 
 - `specforge search <keywords>`: look for duplicates and related issues, in any state. If it is a duplicate, tell the PM in a `response` with the link and stop.
 - Search the codebase (Grep, Glob, Read) for the feature or screen involved. Note whether it already exists, partially exists or is new, and which files and modules a developer would touch.
-- For questions, run `specforge knowledge` first: the answer may already be saved.
+- For questions, if `specforge job` shows `knowledgeBase: true`, run `specforge knowledge` first. A saved answer is a starting point, not a source of truth: verify it against the current code before reusing it.
 
 ### 4b. Choose the target branch (feature and bug)
 
@@ -99,12 +99,12 @@ Run `specforge labels` to see the labels you may add, together with their descri
 
 **redesign:** in the repo clone, create `<designBranchPrefix><identifier lowercase>-<slug>` from the base branch. Apply the redesign with the project's redesign skill. Keep it to presentation code and run the project's checks. Commit, then run `specforge branch`. Attach before/after screenshots if you can produce them. Then run `specforge state <issue> needsApproval`, ask for approval in an `elicitation`, and **stop**. Once approved, finalize as `redesign` with the branch and compare links in the `Design branch` section, so a developer can take it from there.
 
-**question:** answer from the codebase, the knowledge base and the issue context only. Never answer from memory or guesses. Produce the format that was asked for:
+**question:** answer from the codebase (both branches when relevant), the issue context and, if enabled, the knowledge base. Use only those. Never answer from memory or guesses. Produce the format that was asked for:
 - a **Word** document (`.docx`) for explanations;
 - an **Excel** workbook (`.xlsx`) for lists and inventories;
 - plain markdown if nothing was specified.
 
-Use Python (`python-docx`, `openpyxl`) to create the files in `./out/`, attach them, save a concise markdown version with `specforge knowledge-save --title "…"`, then finalize as `question`. The `Sources` section lists the files and issues you used.
+Use Python (`python-docx`, `openpyxl`) to create the files in `./out/` and attach them. If `knowledgeBase` is true, also save a concise markdown version with `specforge knowledge-save --title "…"`. Then finalize as `question`. The `Sources` section lists the files and issues you used.
 
 ### 7. Split big requests
 
