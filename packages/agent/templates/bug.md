@@ -19,6 +19,12 @@ Screenshots (attached), affected users or tenants, environment, frequency, relat
 ## Technical notes
 Suspected area in the codebase, if found (mark guesses as guesses).
 
+## Target branch
+**development** (`dev`) or **production (hotfix)** (`main`), and why.
+- Production status: does the problem exist in production today? (checked in the production checkout)
+- Development status: already fixed or changed in development? Commit/PR if so.
+- Hotfix plan, if production: fix from production, or cherry-pick the development fix; then make sure it lands in development.
+
 +++ Original request
 
 > The report, verbatim.

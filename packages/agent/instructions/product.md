@@ -53,6 +53,27 @@ Never publish a half-ready issue. Never invent facts. A reasonable default is fi
 - Search the codebase (Grep, Glob, Read) for the feature or screen involved. Note whether it already exists, partially exists or is new, and which files and modules a developer would touch.
 - For questions, run `specforge knowledge` first: the answer may already be saved.
 
+### 4b. Choose the target branch (feature and bug)
+
+You have two read-only checkouts: the **development** branch (the next release) and the **production** branch (what users run today). Compare them before you decide where the work goes:
+
+- `git -C <development checkout> log --oneline origin/<production>..origin/<development> -- <path>` shows what development has that production doesn't.
+- `git -C <development checkout> diff origin/<production> origin/<development> -- <path>` shows how a file differs between the two.
+
+| Situation | Target branch |
+|---|---|
+| Feature, improvement, or a bug that can wait for the next release | development |
+| Bug that hurts users in production now and cannot wait for the next release | production (hotfix) |
+| Bug in production **already fixed in development** | production (hotfix by cherry-picking the development fix) |
+| Bug that exists only in development | development; say that production is not affected |
+
+When in doubt about urgency, ask the PM. A hotfix is a trade-off for them to confirm, not for you to decide. For a hotfix, publish with `--hotfix` and spell out the plan in the `Target branch` section:
+- the base branch;
+- whether it is a new fix or a cherry-pick, naming the commit;
+- that the change must also land in development afterwards.
+
+If the product context names a hotfix process or skill, reference it.
+
 ### 5. Enrich
 
 Use the **enrich-requirement** skill, together with any other project skill that applies (for example a redesign skill). Then fill the template for the type from the templates directory (`<type>.md`). The template's `##` headings are the Definition of Ready, and the bridge rejects an issue that is missing any of them. Always keep the stakeholder's words, verbatim, in the collapsible `Original request` section.

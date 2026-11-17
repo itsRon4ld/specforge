@@ -96,12 +96,12 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
     }
 
     case "POST /linear/finalize": {
-      const { issueId, type, title, description, priority } = body();
+      const { issueId, type, title, description, priority, hotfix } = body();
       const problem = notReady(type, description) ?? (title ? null : "title is required");
       if (problem) return send(res, 422, { error: problem });
       const state = finalStateFor(type);
-      await linear.finalize(issueId, { type, title, description, priority, state });
-      return send(res, 200, { ok: true, state });
+      await linear.finalize(issueId, { type, title, description, priority, state, hotfix: hotfix === true });
+      return send(res, 200, { ok: true, state, hotfix: hotfix === true });
     }
 
     case "POST /linear/subissue": {

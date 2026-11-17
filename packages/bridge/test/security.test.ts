@@ -44,6 +44,8 @@ x
 x
 ## Technical notes
 x
+## Target branch
+dev
 
 +++ Original request
 
@@ -61,6 +63,7 @@ x
       "Acceptance criteria",
       "Out of scope",
       "Technical notes",
+      "Target branch",
       "Original request",
     ]);
   });

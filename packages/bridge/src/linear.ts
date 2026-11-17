@@ -28,6 +28,7 @@ export class Linear {
   private teamId = "";
   private stateIds = {} as Record<StateKey, string>;
   private typeLabelIds = {} as Record<RequestType, string>;
+  private hotfixLabelId: string | undefined;
   private token: string;
   private config: Config;
 
@@ -73,10 +74,15 @@ export class Linear {
     const labels = new Map<string, string>(
       [...data.issueLabels.nodes, ...team.labels.nodes].map((l: any) => [l.name.toLowerCase(), l.id]),
     );
-    for (const [type, name] of Object.entries(this.config.linear.labels) as [RequestType, string][]) {
+    const { hotfix, ...typeLabels } = this.config.linear.labels;
+    for (const [type, name] of Object.entries(typeLabels) as [RequestType, string][]) {
       const id = labels.get(name.toLowerCase());
       if (!id) throw new Error(`Linear label "${name}" (${type}) not found`);
       this.typeLabelIds[type] = id;
+    }
+    if (hotfix) {
+      this.hotfixLabelId = labels.get(hotfix.toLowerCase());
+      if (!this.hotfixLabelId) throw new Error(`Linear label "${hotfix}" (hotfix) not found`);
     }
   }
 
@@ -133,11 +139,20 @@ export class Linear {
    */
   async finalize(
     issueId: string,
-    input: { type: RequestType; title: string; description: string; priority?: number; state: StateKey },
+    input: {
+      type: RequestType;
+      title: string;
+      description: string;
+      priority?: number;
+      state: StateKey;
+      hotfix?: boolean;
+    },
   ): Promise<void> {
     const removedLabelIds = Object.entries(this.typeLabelIds)
       .filter(([type]) => type !== input.type)
       .map(([, id]) => id);
+    const addedLabelIds = [this.typeLabelIds[input.type]];
+    if (this.hotfixLabelId) (input.hotfix ? addedLabelIds : removedLabelIds).push(this.hotfixLabelId);
     await this.gql(
       `mutation ($id: String!, $input: IssueUpdateInput!) { issueUpdate(id: $id, input: $input) { success } }`,
       {
@@ -147,7 +162,7 @@ export class Linear {
           description: input.description,
           priority: input.priority,
           stateId: this.stateIds[input.state],
-          addedLabelIds: [this.typeLabelIds[input.type]],
+          addedLabelIds,
           removedLabelIds,
         },
       },

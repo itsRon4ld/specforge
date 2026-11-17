@@ -15,6 +15,7 @@ linear:
     ux: UX
     redesign: Redesign
     question: Question
+    hotfix: Hotfix # optional: added when the issue targets the production branch
   # Answers to platform questions are saved as documents on this issue,
   # so the agent can reuse them next time (your team's knowledge base).
   knowledgeIssue: PRD-1
@@ -45,8 +46,8 @@ agent:
 # Definition of Ready: the bridge refuses to publish an issue whose description
 # is missing any of these headings (## Heading). "Original request" is always required.
 readiness:
-  feature: [Problem, Users, Acceptance criteria, Out of scope, Technical notes]
-  bug: [What happens, Steps to reproduce, Expected, Actual, Evidence]
+  feature: [Problem, Users, Acceptance criteria, Out of scope, Technical notes, Target branch]
+  bug: [What happens, Steps to reproduce, Expected, Actual, Evidence, Target branch]
   ux: [Problem, Users, User flow, Screens, Acceptance criteria]
   redesign: [Problem, Design branch, What changes, Acceptance criteria]
   question: [Question, Answer, Sources]

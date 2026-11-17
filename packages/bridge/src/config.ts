@@ -13,7 +13,10 @@ export type Config = {
   linear: {
     team: string;
     states: Record<StateKey, string>;
-    labels: Record<RequestType, string>;
+    labels: Record<RequestType, string> & {
+      /** Optional label added when the issue targets the production branch. */
+      hotfix?: string;
+    };
     knowledgeIssue?: string;
   };
   approvals: { approvers: string[]; words: string[] };
@@ -42,8 +45,8 @@ export type Env = {
 
 /** Sensible Definition of Ready if config.yaml does not override it. */
 export const DEFAULT_READINESS: Record<RequestType, string[]> = {
-  feature: ["Problem", "Users", "Acceptance criteria", "Out of scope", "Technical notes"],
-  bug: ["What happens", "Steps to reproduce", "Expected", "Actual", "Evidence"],
+  feature: ["Problem", "Users", "Acceptance criteria", "Out of scope", "Technical notes", "Target branch"],
+  bug: ["What happens", "Steps to reproduce", "Expected", "Actual", "Evidence", "Target branch"],
   ux: ["Problem", "Users", "User flow", "Screens", "Acceptance criteria"],
   redesign: ["Problem", "Design branch", "What changes", "Acceptance criteria"],
   question: ["Question", "Answer", "Sources"],

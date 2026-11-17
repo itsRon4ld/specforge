@@ -20,7 +20,8 @@ Context
   knowledge                              Saved answers to earlier questions
 
 Publish (bodies come from stdin)
-  finalize <issue> --type T --title X [--priority 0-4]   Publish the finished issue (DoR enforced)
+  finalize <issue> --type T --title X [--priority 0-4] [--hotfix]
+                                                         Publish the finished issue (DoR enforced)
   subissue <parent> --type T --title X                   Create a ready sub-issue (DoR enforced)
   attach <issue> <file> [--title X]                      Attach a file (docx, xlsx, png, html…)
   doc <issue> --title X                                  Add a document to the issue
@@ -69,6 +70,7 @@ async function main() {
       type: { type: "string" },
       title: { type: "string" },
       priority: { type: "string" },
+      hotfix: { type: "boolean" },
     },
   });
   const [command, ...args] = positionals;
@@ -102,6 +104,7 @@ async function main() {
           type: arg(values.type, "--type"),
           title: arg(values.title, "--title"),
           priority: values.priority ? Number(values.priority) : undefined,
+          hotfix: values.hotfix === true,
           description: stdin(),
         }),
       );

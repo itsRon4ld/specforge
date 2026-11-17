@@ -18,6 +18,12 @@ Who is affected: role, customer or tenant. Include rough numbers if known.
 - New pieces likely needed
 - Assumptions (marked as such)
 
+## Target branch
+**development** (`dev`) or **production (hotfix)** (`main`), and why.
+- Production status: does the problem exist in production today? (checked in the production checkout)
+- Development status: already fixed or changed in development? Commit/PR if so.
+- Hotfix plan, if production: fix from production, or cherry-pick the development fix; then make sure it lands in development.
+
 +++ Original request
 
 > The stakeholder's message(s), verbatim, with date and author if known.
