@@ -36,6 +36,7 @@ export const ROUTES: Record<string, Role[]> = {
   "GET /linear/search": ["product"],
   "GET /linear/file": ["product"],
   "GET /linear/knowledge": ["product"],
+  "GET /linear/labels": ["product"],
   "POST /linear/knowledge": ["product"],
   "POST /linear/finalize": ["product"],
   "POST /linear/subissue": ["product"],
@@ -90,6 +91,33 @@ export function missingSections(description: string, required: string[], origina
   const hasOriginal = collapsibles.has(original) || headings.has(original);
   const missing = required.filter((h) => !headings.has(h.toLowerCase()));
   return hasOriginal ? missing : [...missing, originalTitle];
+}
+
+export type LabelInfo = { id: string; name: string; description: string | null };
+
+/**
+ * Extra labels the agent asks for (tenant, area…). Any label that already exists
+ * can be used; the agent never creates labels. Labels the bridge manages itself
+ * (type labels and hotfix) are refused here: they follow the type and the hotfix flag.
+ */
+export function resolveExtraLabels(
+  requested: string[],
+  available: LabelInfo[],
+  managedNames: string[],
+): { ids: string[]; unknown: string[]; managed: string[] } {
+  const byName = new Map(available.map((l) => [l.name.toLowerCase(), l]));
+  const managedSet = new Set(managedNames.map((n) => n.toLowerCase()));
+  const ids = new Set<string>();
+  const unknown: string[] = [];
+  const managed: string[] = [];
+  for (const raw of requested) {
+    const name = raw.trim();
+    if (!name) continue;
+    if (managedSet.has(name.toLowerCase())) managed.push(name);
+    else if (byName.has(name.toLowerCase())) ids.add(byName.get(name.toLowerCase())!.id);
+    else unknown.push(name);
+  }
+  return { ids: [...ids], unknown, managed };
 }
 
 /** Final state for each request type once it passes the Definition of Ready. */

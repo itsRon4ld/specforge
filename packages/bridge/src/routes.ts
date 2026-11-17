@@ -9,6 +9,7 @@ import {
   isAllowedBranch,
   isLinearUpload,
   missingSections,
+  resolveExtraLabels,
   roleFor,
   STATE_ALLOWLIST,
 } from "./security.ts";
@@ -44,7 +45,28 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
     return missing.length ? `not ready, missing sections: ${missing.join(", ")}` : null;
   };
 
+  /** Validates extra label names against the live Linear labels; returns ids or an error message. */
+  const extraLabels = async (names: unknown): Promise<{ ids: string[] } | { error: string }> => {
+    if (names === undefined || names === null) return { ids: [] };
+    if (!Array.isArray(names) || !names.every((n) => typeof n === "string")) {
+      return { error: "labels must be a list of label names" };
+    }
+    const result = resolveExtraLabels(names, await linear.labels(), linear.managedLabelNames());
+    if (result.managed.length) {
+      return { error: `labels set by type or --hotfix, not by name: ${result.managed.join(", ")}` };
+    }
+    if (result.unknown.length) {
+      return { error: `labels do not exist in Linear (run \`specforge labels\`): ${result.unknown.join(", ")}` };
+    }
+    return { ids: result.ids };
+  };
+
   switch (key) {
+    case "GET /linear/labels": {
+      const managed = new Set(linear.managedLabelNames().map((n) => n.toLowerCase()));
+      return send(res, 200, (await linear.labels()).filter((l) => !managed.has(l.name.toLowerCase())));
+    }
+
     case "GET /jobs/next": {
       const job = store.claimNext(role);
       if (!job) return send(res, 204);
@@ -102,19 +124,35 @@ export async function onInternal(raw: Buffer, req: IncomingMessage, res: ServerR
     }
 
     case "POST /linear/finalize": {
-      const { issueId, type, title, description, priority, hotfix } = body();
+      const { issueId, type, title, description, priority, hotfix, labels } = body();
       const problem = notReady(type, description) ?? (title ? null : "title is required");
       if (problem) return send(res, 422, { error: problem });
+      const extra = await extraLabels(labels);
+      if ("error" in extra) return send(res, 422, { error: extra.error });
       const state = finalStateFor(type);
-      await linear.finalize(issueId, { type, title, description, priority, state, hotfix: hotfix === true });
-      return send(res, 200, { ok: true, state, hotfix: hotfix === true });
+      await linear.finalize(issueId, {
+        type,
+        title,
+        description,
+        priority,
+        state,
+        hotfix: hotfix === true,
+        extraLabelIds: extra.ids,
+      });
+      return send(res, 200, { ok: true, state, hotfix: hotfix === true, labels: labels ?? [] });
     }
 
     case "POST /linear/subissue": {
-      const { parentId, type, title, description } = body();
+      const { parentId, type, title, description, labels } = body();
       const problem = notReady(type, description) ?? (title ? null : "title is required");
       if (problem) return send(res, 422, { error: problem });
-      return send(res, 200, await linear.createSubIssue(parentId, { type, title, description }));
+      const extra = await extraLabels(labels);
+      if ("error" in extra) return send(res, 422, { error: extra.error });
+      return send(
+        res,
+        200,
+        await linear.createSubIssue(parentId, { type, title, description, extraLabelIds: extra.ids }),
+      );
     }
 
     case "POST /linear/comment": {

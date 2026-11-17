@@ -1,4 +1,5 @@
 import type { Config, RequestType, StateKey } from "./config.ts";
+import type { LabelInfo } from "./security.ts";
 
 const API = "https://api.linear.app/graphql";
 
@@ -86,6 +87,29 @@ export class Linear {
     }
   }
 
+  /** Names of the labels the bridge manages itself (type labels and hotfix). */
+  managedLabelNames(): string[] {
+    const { hotfix, ...types } = this.config.linear.labels;
+    return [...Object.values(types), ...(hotfix ? [hotfix] : [])];
+  }
+
+  /**
+   * Live list of the team's and workspace's labels, with descriptions. Fetched on
+   * every call, so a label created in Linear is usable on the next request.
+   */
+  async labels(): Promise<LabelInfo[]> {
+    const data = await this.gql(
+      `query ($teamId: String!) {
+        team(id: $teamId) { labels(first: 250) { nodes { id name description isGroup } } }
+        issueLabels(first: 250, filter: { team: { null: true } }) { nodes { id name description isGroup } }
+      }`,
+      { teamId: this.teamId },
+    );
+    return [...data.team.labels.nodes, ...data.issueLabels.nodes]
+      .filter((l: any) => !l.isGroup)
+      .map((l: any) => ({ id: l.id, name: l.name, description: l.description ?? null }));
+  }
+
   /** Accepts an id or an identifier such as PRD-12. */
   async issue(idOrIdentifier: string): Promise<IssueDetails> {
     const data = await this.gql(
@@ -146,12 +170,14 @@ export class Linear {
       priority?: number;
       state: StateKey;
       hotfix?: boolean;
+      /** Already-validated extra label ids (see resolveExtraLabels). */
+      extraLabelIds?: string[];
     },
   ): Promise<void> {
     const removedLabelIds = Object.entries(this.typeLabelIds)
       .filter(([type]) => type !== input.type)
       .map(([, id]) => id);
-    const addedLabelIds = [this.typeLabelIds[input.type]];
+    const addedLabelIds = [this.typeLabelIds[input.type], ...(input.extraLabelIds ?? [])];
     if (this.hotfixLabelId) (input.hotfix ? addedLabelIds : removedLabelIds).push(this.hotfixLabelId);
     await this.gql(
       `mutation ($id: String!, $input: IssueUpdateInput!) { issueUpdate(id: $id, input: $input) { success } }`,
@@ -169,7 +195,10 @@ export class Linear {
     );
   }
 
-  async createSubIssue(parentId: string, input: { type: RequestType; title: string; description: string }) {
+  async createSubIssue(
+    parentId: string,
+    input: { type: RequestType; title: string; description: string; extraLabelIds?: string[] },
+  ) {
     const data = await this.gql(
       `mutation ($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { id identifier url } } }`,
       {
@@ -178,7 +207,7 @@ export class Linear {
           parentId,
           title: input.title.slice(0, 255),
           description: input.description,
-          labelIds: [this.typeLabelIds[input.type]],
+          labelIds: [this.typeLabelIds[input.type], ...(input.extraLabelIds ?? [])],
           stateId: this.stateIds.backlog,
         },
       },

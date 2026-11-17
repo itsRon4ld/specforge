@@ -10,6 +10,7 @@ import {
   isFreshWebhook,
   isLinearUpload,
   missingSections,
+  resolveExtraLabels,
   roleFor,
   STATE_ALLOWLIST,
   verifyLinearSignature,
@@ -123,5 +124,25 @@ describe("agent policy", () => {
     assert.equal(isApproval("Approved!", "pm-1", approvals), true);
     assert.equal(isApproval("approved", "someone-else", approvals), false);
     assert.equal(isApproval("ok but change the color", "pm-1", approvals), false);
+  });
+});
+
+describe("extra labels", () => {
+  const available = [
+    { id: "l1", name: "UPEU", description: "Tenant" },
+    { id: "l2", name: "customer requirement", description: null },
+    { id: "l3", name: "Bug", description: null },
+    { id: "l4", name: "Hotfix", description: null },
+  ];
+  const managed = ["Feature", "Bug", "UX", "Redesign", "Question", "Hotfix"];
+
+  it("resolves existing labels case-insensitively and dedupes", () => {
+    const r = resolveExtraLabels(["upeu", " Customer Requirement ", "UPEU"], available, managed);
+    assert.deepEqual(r, { ids: ["l1", "l2"], unknown: [], managed: [] });
+  });
+
+  it("refuses unknown labels and labels managed by the bridge", () => {
+    const r = resolveExtraLabels(["NEWTENANT", "bug", "hotfix"], available, managed);
+    assert.deepEqual(r, { ids: [], unknown: ["NEWTENANT"], managed: ["bug", "hotfix"] });
   });
 });
