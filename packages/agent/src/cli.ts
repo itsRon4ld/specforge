@@ -18,11 +18,12 @@ Context
   image <uploads.linear.app URL> <out>   Download a pasted screenshot or file to look at it
   search <text>                          Team issues matching the text, in any state
   knowledge                              Saved answers to earlier questions
+  labels                                 Labels you can add (tenant, area…), with descriptions
 
 Publish (bodies come from stdin)
-  finalize <issue> --type T --title X [--priority 0-4] [--hotfix]
+  finalize <issue> --type T --title X [--priority 0-4] [--hotfix] [--labels "A,B"]
                                                          Publish the finished issue (DoR enforced)
-  subissue <parent> --type T --title X                   Create a ready sub-issue (DoR enforced)
+  subissue <parent> --type T --title X [--labels "A,B"]  Create a ready sub-issue (DoR enforced)
   attach <issue> <file> [--title X]                      Attach a file (docx, xlsx, png, html…)
   doc <issue> --title X                                  Add a document to the issue
   knowledge-save --title X                               Save an answer to the knowledge base
@@ -58,6 +59,10 @@ function job() {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+/** `--labels "UPEU, customer requirement"` → ["UPEU", "customer requirement"]. */
+const labelList = (value: string | undefined) =>
+  value ? value.split(",").map((l) => l.trim()).filter(Boolean) : undefined;
+
 function arg(value: string | undefined, name: string): string {
   if (!value) throw new Error(`missing ${name}\n\n${USAGE}`);
   return value;
@@ -71,6 +76,7 @@ async function main() {
       title: { type: "string" },
       priority: { type: "string" },
       hotfix: { type: "boolean" },
+      labels: { type: "string" },
     },
   });
   const [command, ...args] = positionals;
@@ -94,6 +100,9 @@ async function main() {
     case "knowledge":
       return out(await bridge.get("/linear/knowledge"));
 
+    case "labels":
+      return out(await bridge.get("/linear/labels"));
+
     case "knowledge-save":
       return out(await bridge.post("/linear/knowledge", { title: arg(values.title, "--title"), content: stdin() }));
 
@@ -105,6 +114,7 @@ async function main() {
           title: arg(values.title, "--title"),
           priority: values.priority ? Number(values.priority) : undefined,
           hotfix: values.hotfix === true,
+          labels: labelList(values.labels),
           description: stdin(),
         }),
       );
@@ -115,6 +125,7 @@ async function main() {
           parentId: arg(args[0], "parent"),
           type: arg(values.type, "--type"),
           title: arg(values.title, "--title"),
+          labels: labelList(values.labels),
           description: stdin(),
         }),
       );

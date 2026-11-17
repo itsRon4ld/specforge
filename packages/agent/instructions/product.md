@@ -84,6 +84,13 @@ Write for a developer who has never seen the conversation:
 - an explicit "Out of scope" section;
 - technical notes naming real files from the codebase. In those notes, label your guesses as guesses.
 
+### 5b. Labels
+
+Run `specforge labels` to see the labels you may add, together with their descriptions. Add the ones that apply with `--labels "A,B"` on `finalize` and `subissue`: the customer or tenant, the product area, the kind of request. Follow each label's description when you decide.
+
+- Use only labels that exist. You cannot create labels; if one seems to be missing, say so in your final `response`.
+- Do not pass type labels or the hotfix label by name: they follow `--type` and `--hotfix`.
+
 ### 6. Produce the deliverable
 
 **feature / bug:** publish with `specforge finalize <issue> --type <type> --title "…" [--priority N]`, description on stdin. For a bug, describe what happens, the steps, expected vs. actual, and attach the evidence (the screenshots you downloaded, with `specforge attach`).
