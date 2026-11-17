@@ -38,7 +38,17 @@ In `config.yaml`:
 
 Replace `packages/agent/skills/enrich-requirement/SKILL.md` with your team's enrichment process, and add any other skills you use, such as a redesign skill.
 
-The recommended way is to keep them **in your product repo**, for example under `infra/specforge/{skills,templates,context.md}`, and set `agent.skillsPath`, `templatesPath` and `contextPath`. They are versioned with your code, reviewed in PRs and stay private. Alternatively, mount a folder and set `SKILLS_DIR` / `TEMPLATES_DIR` / `CONTEXT_FILE`.
+The recommended way is a **private setup repository** with `config.yaml`, `context.md`, `skills/` and `templates/` at its root:
+- Set `SETUP_REPO_URL` to a read-only clone URL. The agent picks up `skills/`, `templates/` and `context.md` before every job.
+- Mount the same `config.yaml` into the bridge.
+
+Your setup stays versioned and private, apart from both specforge and your product code.
+
+Alternatives:
+- inside your product repo, with `agent.skillsPath`, `templatesPath` and `contextPath`;
+- a mounted folder, with `SKILLS_DIR` / `TEMPLATES_DIR` / `CONTEXT_FILE`.
+
+Templates can be in any language. Set `originalRequestTitle` and the `readiness` headings to match them.
 
 ## 5. Run
 

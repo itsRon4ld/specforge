@@ -64,10 +64,11 @@ sequenceDiagram
 |---|---|
 | Runtime | Claude Code through the Claude Agent SDK (`claude_code` preset + `instructions/product.md`) |
 | Workspace | Per-job folder with `.claude/skills` and `out/`, plus clean read-only checkouts of the **development** and **production** branches (partial clone + worktree) |
-| Codebase context | The repo's root `CLAUDE.md` is added to the instructions; nested ones are read on demand |
-| Skills | Loaded as project skills: your enrichment and redesign processes. From `SKILLS_DIR`, `agent.skillsPath` (inside the product repo) or the bundled `skills/` |
-| Templates | `<type>.md` matching the Definition of Ready. From `TEMPLATES_DIR`, `agent.templatesPath` or the bundled `templates/` |
-| Context | Optional `agent.contextPath` file (your product map: customers, roles, modules, glossary) |
+| Codebase context | The repo's root `CLAUDE.md` (or `AGENTS.md`, or `README.md`) is added to the instructions; nested ones are read on demand |
+| Skills | Loaded as project skills: your enrichment and redesign processes |
+| Templates | `<type>.md` matching the Definition of Ready, in any language |
+| Context | Optional `context.md`: your product map (customers, roles, modules, glossary) |
+| Source precedence | `SKILLS_DIR`/`TEMPLATES_DIR`/`CONTEXT_FILE` → setup repo (`SETUP_REPO_URL`) → paths inside the product repo → bundled defaults |
 | Tools | Bash, Read, Write, Edit, Glob, Grep, Skill, TodoWrite, and the `specforge` CLI |
 | States it can set | `needsInfo`, `needsApproval` (the rest only through `finalize`) |
 

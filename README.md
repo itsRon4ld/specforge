@@ -120,7 +120,18 @@ How your team writes requirements is yours. specforge loads every folder in [`pa
 
 - `enrich-requirement`: ships as a solid default (problem framing, gap checklist, Given/When/Then, INVEST splitting). Replace it with your own process.
 - Add a `redesign` skill with your design-system rules, and the agent uses it for redesign requests.
-- Keep them private and versioned **in your product repo** with `agent.skillsPath`, which also works for `templatesPath` and a `contextPath` file describing your product. Or mount a folder and set `SKILLS_DIR`.
+- Keep your whole setup in a **private setup repository** and point `SETUP_REPO_URL` at it (recommended):
+
+  ```
+  your-specforge-setup/   (private)
+    config.yaml           team, states, labels, approvers (no secrets)
+    context.md            your product map: customers, roles, modules, glossary
+    skills/               enrich-requirement, redesign, …
+    templates/            feature.md, bug.md, ux.md, redesign.md, question.md
+  ```
+
+  The agent refreshes it before every job, so a pushed change applies to the next request.
+- Or version it inside your product repo with `agent.skillsPath` / `templatesPath` / `contextPath`, or mount a folder and set `SKILLS_DIR`.
 
 The agent also reads your repo's root `CLAUDE.md`, so your architecture notes double as its codebase map.
 
