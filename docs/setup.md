@@ -31,6 +31,7 @@ In `config.yaml`:
 ## 3. GitHub
 
 - **`REPO_CLONE_URL`:** a read-only clone of the product codebase, using a deploy key or a fine-grained token with *Contents: read*.
+- **Token expiry:** fine-grained tokens expire. Before each request the agent checks the expiry date GitHub reports and warns in the Linear session when 7 days or fewer remain. If a clone fails, it says which token to renew.
 - **Branches:** set `github.branches.development` (for example `dev`) and `github.branches.production` (for example `main`). With a single branch, use the same name for both.
 - **`GITHUB_TOKEN`** (bridge only): *Contents: read & write*, so it can push `design/*` branches. If you don't want redesign branches, a read-only token is enough; branch pushes will then fail cleanly.
 

@@ -1,6 +1,7 @@
 import { cpSync, existsSync, mkdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
+import { RepoAccessError, type RepoKind } from "./repo-access.ts";
 
 export type Branches = { development: string; production: string };
 
@@ -25,14 +26,25 @@ function resetTo(dir: string, ref: string) {
  * what is coming next (and tell whether a bug is already fixed in development).
  * Redesign commits leave the sandbox only as a bundle through the bridge.
  */
+/** Runs a network git step; any failure becomes a RepoAccessError that never echoes the token. */
+function networkStep(kind: RepoKind, step: () => void) {
+  try {
+    step();
+  } catch {
+    throw new RepoAccessError(kind);
+  }
+}
+
 export function prepareRepo(workDir: string, cloneUrl: string, branches: Branches): Checkouts {
   const repo = join(workDir, "repo");
-  if (!existsSync(join(repo, ".git"))) {
-    // Partial clone: full commit history (for diffs and logs) but file contents are
-    // fetched on demand. Much faster and smaller for large monorepos.
-    execFileSync("git", ["clone", "--quiet", "--filter=blob:none", cloneUrl, repo], { stdio: "inherit" });
-  }
-  run(repo, "fetch", "--quiet", "--prune", "origin");
+  networkStep("product", () => {
+    if (!existsSync(join(repo, ".git"))) {
+      // Partial clone: full commit history (for diffs and logs) but file contents are
+      // fetched on demand. Much faster and smaller for large monorepos.
+      execFileSync("git", ["clone", "--quiet", "--filter=blob:none", cloneUrl, repo], { stdio: "ignore" });
+    }
+    execFileSync("git", ["-C", repo, "fetch", "--quiet", "--prune", "origin"], { stdio: "ignore" });
+  });
   resetTo(repo, `origin/${branches.development}`);
 
   if (branches.production === branches.development) return { development: repo, production: repo };
@@ -56,10 +68,12 @@ export function prepareRepo(workDir: string, cloneUrl: string, branches: Branche
 export function prepareSetupRepo(workDir: string, cloneUrl: string | undefined): string | null {
   if (!cloneUrl) return null;
   const dir = join(workDir, "setup");
-  if (!existsSync(join(dir, ".git"))) {
-    execFileSync("git", ["clone", "--quiet", "--depth=1", cloneUrl, dir], { stdio: "inherit" });
-  }
-  run(dir, "fetch", "--quiet", "--depth=1", "origin");
+  networkStep("setup", () => {
+    if (!existsSync(join(dir, ".git"))) {
+      execFileSync("git", ["clone", "--quiet", "--depth=1", cloneUrl, dir], { stdio: "ignore" });
+    }
+    execFileSync("git", ["-C", dir, "fetch", "--quiet", "--depth=1", "origin"], { stdio: "ignore" });
+  });
   resetTo(dir, "FETCH_HEAD");
   return dir;
 }

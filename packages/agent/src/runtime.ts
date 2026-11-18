@@ -4,6 +4,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { BridgeClient, type JobEnvelope } from "./bridge-client.ts";
+import { expiryWarnings, RepoAccessError } from "./repo-access.ts";
 import { prepareJobDir, prepareRepo, prepareSetupRepo, type Checkouts } from "./workspace.ts";
 
 /**
@@ -98,6 +99,12 @@ function taskPrompt(envelope: JobEnvelope, checkouts: Checkouts, templatesDir: s
 }
 
 async function runJob(envelope: JobEnvelope) {
+  const sessionId = envelope.job.payload.sessionId as string | undefined;
+  for (const warning of await expiryWarnings()) {
+    log(warning);
+    if (sessionId) await bridge.activity(sessionId, "thought", `⚠️ ${warning}`).catch(() => undefined);
+  }
+
   // The repo comes first: skills, templates and context may live inside it.
   const checkouts = prepareRepo(WORK_DIR, process.env.REPO_CLONE_URL ?? "", envelope.branches);
   const setup = prepareSetupRepo(WORK_DIR, process.env.SETUP_REPO_URL);
@@ -156,9 +163,9 @@ async function main() {
       }
       const sessionId = envelope.job.payload.sessionId as string | undefined;
       if (sessionId) {
-        await bridge
-          .activity(sessionId, "error", "I could not finish this request. Mention me again to retry.")
-          .catch(() => undefined);
+        const message =
+          e instanceof RepoAccessError ? e.message : "I could not finish this request. Mention me again to retry.";
+        await bridge.activity(sessionId, "error", message).catch(() => undefined);
       }
       await bridge.finish(envelope.job.id, "failed").catch(() => undefined);
     }
